@@ -6,6 +6,8 @@ void dump_frame(unsigned char buf[], unsigned short len);
 
 int is_arp(unsigned char buf[], unsigned short len);
 
+short conv_endian16(short value);
+
 struct ether_hdr {
     char dst_addr[6];
     char src_addr[6];
@@ -47,6 +49,15 @@ void dump_frame(unsigned char buf[], unsigned short len)
 {
 	unsigned short i;
 	for (i = 0; i < len; i++) {
+		if (0 < i) {
+			if (buf[i-1] == 0x06 && buf[i] == 0x08) {
+				puts("ARP TYPE FOUND\r\n");
+				long long x = 0;
+				while(x < 1000000000) {
+					i += 1;
+				}
+			}
+		}
 		puth(buf[i], 2);
 		putc(' ');
 
@@ -110,8 +121,8 @@ int is_arp(unsigned char buf[], unsigned short len)
 	if (strncmp(hdr.dst_addr, pat, 6)) {
 		puts("BROADCAST FOUND. TYPE: ");
 		puth(hdr.type, 10);
-		long i = 0;
-		while(i < 100000000) {
+		long long i = 0;
+		while(i < 1000000000) {
 			i += 1;
 		}
 		if (conv_endian16(hdr.type) == 0x0806) {
