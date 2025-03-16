@@ -108,8 +108,12 @@ int is_arp(unsigned char buf[], unsigned short len)
 	memcpy(&hdr, buf, sizeof(struct ether_hdr));
 	char pat[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	if (strncmp(hdr.dst_addr, pat, 6)) {
-		puts("BROADCAST FOUND. SRC: ");
-		puts(hdr.src_addr);
+		puts("BROADCAST FOUND. TYPE: ");
+		puth(hdr.type, 10);
+		long i = 0;
+		while(i < 100000000) {
+			i += 1;
+		}
 		if (conv_endian16(hdr.type) == 0x0806) {
 			puts("TYPE IS ARP");
 			return 1;
