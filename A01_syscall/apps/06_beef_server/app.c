@@ -43,7 +43,7 @@ void dump_frame(unsigned char buf[], unsigned short len)
 	unsigned short i;
 	for (i = 0; i < len; i++) {
 		if (buf[i] == 0xff) {
-			puts("ff found");
+			puts("FF FOUND");
 		}
 		puth(buf[i], 2);
 		putc(' ');
