@@ -4,6 +4,12 @@
 
 void dump_frame(unsigned char buf[], unsigned short len);
 
+struct ether_hdr {
+    char dst_addr[6];
+    char src_addr[6];
+    short type;
+} __attribute__((__packed__));
+
 int main(void)
 {
 	while (1) {
@@ -36,6 +42,9 @@ void dump_frame(unsigned char buf[], unsigned short len)
 {
 	unsigned short i;
 	for (i = 0; i < len; i++) {
+		if (buf[i] == 0xff) {
+			puts("ff found");
+		}
 		puth(buf[i], 2);
 		putc(' ');
 
