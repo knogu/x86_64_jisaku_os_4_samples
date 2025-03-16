@@ -43,6 +43,9 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	kbc_init();
 	nic_init();
 
+	while (1)
+		cpu_halt();
+
 	/* システムコールの初期化 */
 	syscall_init();
 
