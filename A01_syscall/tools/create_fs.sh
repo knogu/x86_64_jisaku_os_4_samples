@@ -13,7 +13,7 @@ while [ -n "$1" ]; do
 
 	## ファイルサイズを出力
 	### ファイルサイズを16進8桁へ変換
-	size=$(stat -c '%s' $1)
+	size=$(stat -f '%z' "$1")
 	size_hex=$(printf "%08X" $size)
 	### リトルエンディアンへ変換
 	size_hex_le=''
