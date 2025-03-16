@@ -25,7 +25,7 @@ int main(void)
 
 		/* 受信 */
 		while (!(len = receive_frame(buf)));
-		if (is_arp(buf, len)) {
+		if (is_arp_naive(buf, len)) {
 			while(1) {}
 		}
 		dump_frame(buf, len);
@@ -143,7 +143,11 @@ int is_arp_naive(unsigned char buf[], unsigned short len)
 	if (strncmp(hdr.dst_addr, pat, 6)) {
 		puts("BROADCAST FOUND.");
 		if (buf[12] == 0x06 && buf[13] == 0x08) {
-			puts("TYPE IS ARP");
+			puts("type 06 08");
+			return 1;
+		}
+		if (buf[12] == 0x08 && buf[13] == 0x06) {
+			puts("type 08 06");
 			return 1;
 		}
 	}
