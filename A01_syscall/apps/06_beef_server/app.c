@@ -6,6 +6,8 @@ void dump_frame(unsigned char buf[], unsigned short len);
 
 int is_arp(unsigned char buf[], unsigned short len);
 
+int is_arp_naive(unsigned char buf[], unsigned short len);
+
 short conv_endian16(short value);
 
 struct ether_hdr {
@@ -23,7 +25,7 @@ int main(void)
 
 		/* 受信 */
 		while (!(len = receive_frame(buf)));
-		if (is_arp(buf, len)) {
+		if (is_arp_naive(buf, len)) {
 			while(1) {}
 		}
 		dump_frame(buf, len);
@@ -126,6 +128,21 @@ int is_arp(unsigned char buf[], unsigned short len)
 			i += 1;
 		}
 		if (conv_endian16(hdr.type) == 0x0806) {
+			puts("TYPE IS ARP");
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int is_arp_naive(unsigned char buf[], unsigned short len)
+{
+	struct ether_hdr hdr;
+	memcpy(&hdr, buf, sizeof(struct ether_hdr));
+	char pat[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+	if (strncmp(hdr.dst_addr, pat, 6)) {
+		puts("BROADCAST FOUND.");
+		if (buf[12] == 0x06 && buf[13] == 0x08) {
 			puts("TYPE IS ARP");
 			return 1;
 		}
