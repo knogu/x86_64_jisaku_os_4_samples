@@ -25,7 +25,7 @@ int main(void)
 
 		/* 受信 */
 		while (!(len = receive_frame(buf)));
-		if (is_arp_naive(buf, len)) {
+		if (is_arp(buf, len)) {
 			while(1) {}
 		}
 		dump_frame(buf, len);
@@ -137,7 +137,7 @@ int is_arp(unsigned char buf[], unsigned short len)
 		// while(i < 1000000000) {
 		// 	i += 1;
 		// }
-		if (hdr.type == 0x0806) { // why not little endian..?
+		if (hdr.type == 0x0608) { // why not little endian..?
 			puts("TYPE IS ARP");
 			return 1;
 		}
