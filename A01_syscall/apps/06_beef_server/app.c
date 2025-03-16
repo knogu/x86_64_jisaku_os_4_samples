@@ -42,6 +42,16 @@ int main(void)
 		puts("__SENDED ");
 		puth(stat, 2);
 		puts("\r\n");
+
+		if (buf[0] == 0xff && buf[1] == 0xff && buf[2] == 0xff && buf[3] == 0xff && buf[4] == 0xff && buf[5] == 0xff) {
+			if (buf[12] == 0x08 && buf[13] == 0x06) {
+				puts("LOOKS LIKE ARP\r\n");
+			}
+			long long x = 0;
+			while(x < 1000000000) {
+				x += 1;
+			}
+		}
 	}
 
 	return 0;
