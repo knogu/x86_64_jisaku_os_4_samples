@@ -16,6 +16,33 @@ struct ether_hdr {
     short type;
 } __attribute__((__packed__));
 
+void fill(unsigned char buf_s[], unsigned char idx, unsigned char* src, unsigned char len) {
+	for (int i = idx; i < idx + len; i++) {
+		buf_s[i] = *(src + i);
+	}
+}
+
+void fill_bytes(unsigned char buf_s[], unsigned char idx, long long val, unsigned char bytes_cnt) {
+	for (int i = idx; i < idx + bytes_cnt; i++) {
+		buf_s[i] = val >> (8 * (bytes_cnt - (i - idx))); // ビッグエンディアンなので、valの上のバイトからbufに詰めていく
+	}
+}
+
+unsigned char src_mac_addr[] = {0x68, 0xf7, 0x28, 0x69, 0x24, 0xcc};
+unsigned char src_ip_addr[] = {192, 168, 1, 0};
+
+void set_src_mac(unsigned char buf_s[]) {
+	for (int i = 0; i < 6; i++) {
+		buf_s[i + 6] = src_mac_addr[i];
+	}
+}
+
+void set_dst_mac(unsigned char buf_s[], unsigned char* dst_mac) {
+	for (int i = 0; i < 6; i++) {
+		buf_s[i] = *(dst_mac + i);
+	}
+}
+
 int main(void)
 {
 	while (1) {
@@ -32,16 +59,16 @@ int main(void)
 		puts("__RECEIVED\r\n");
 
 		/* 送信 */
-		buf_s[0] = 0xbe;
-		buf_s[1] = 0xef;
-		buf_s[2] = 0xbe;
-		buf_s[3] = 0xef;
-		len = 4;
-		dump_frame(buf_s, len);
-		unsigned char stat = send_frame(buf_s, len);
-		puts("__SENDED ");
-		puth(stat, 2);
-		puts("\r\n");
+		// buf_s[0] = 0xbe;
+		// buf_s[1] = 0xef;
+		// buf_s[2] = 0xbe;
+		// buf_s[3] = 0xef;
+		// len = 4;
+		// dump_frame(buf_s, len);
+		// unsigned char stat = send_frame(buf_s, len);
+		// puts("__SENDED ");
+		// puth(stat, 2);
+		// puts("\r\n");
 
 		if (buf[0] == 0xff && buf[1] == 0xff && buf[2] == 0xff && buf[3] == 0xff && buf[4] == 0xff && buf[5] == 0xff) {
 			if (buf[12] == 0x08 && buf[13] == 0x06) {
@@ -51,6 +78,20 @@ int main(void)
 			while(x < 1000000000) {
 				x += 1;
 			}
+
+			set_dst_mac(buf_s, (buf + 6));
+			set_src_mac(buf_s);
+			buf_s[12] = 0x08;
+			buf_s[13] = 0x06;
+			fill_bytes(buf_s, 14, 0x0001, 2);
+			fill_bytes(buf_s, 16, 0x0800, 2);
+			fill_bytes(buf_s, 18, 6, 1);
+			fill_bytes(buf_s, 19, 4, 1);
+			fill_bytes(buf_s, 20, 2, 2);
+			fill(buf_s, 22, src_mac_addr, 6);
+			fill(buf_s, 28, src_ip_addr, 4);
+			fill(buf_s, 32, (buf + 6), 6);
+			// todo: parse the arp request and fill target ip, and check the 
 		}
 	}
 
@@ -127,17 +168,18 @@ short conv_endian16(short value) {
 
 int is_arp(unsigned char buf[], unsigned short len)
 {
-	struct ether_hdr hdr;
-	memcpy(&hdr, buf, sizeof(struct ether_hdr));
+	struct ether_hdr *hdr;
+	hdr = (struct ether_hdr*) buf;
+	// memcpy(&hdr, buf, sizeof(struct ether_hdr));
 	char pat[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-	if (strncmp(hdr.dst_addr, pat, 6)) {
+	if (strncmp(hdr->dst_addr, pat, 6)) {
 		puts("BROADCAST FOUND.");
 		// puth(hdr.type, 10);
 		// long long i = 0;
 		// while(i < 1000000000) {
 		// 	i += 1;
 		// }
-		if (hdr.type == 0x0608) { // why not little endian..?
+		if (hdr->type == 0x0806) { // why not little endian..?
 			puts("TYPE IS ARP");
 			return 1;
 		}
