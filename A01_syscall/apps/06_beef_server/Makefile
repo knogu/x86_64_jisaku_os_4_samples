@@ -12,7 +12,7 @@ $(TARGET): $(OBJS)
 
 deploy: $(TARGET)
 	../../tools/create_fs.sh $(TARGET)
-	mv fs.img ../../../fs/
+	cp fs.img ../../../fs/
 
 clean:
 	rm -f *~ *.o *.map $(TARGET) include/*~

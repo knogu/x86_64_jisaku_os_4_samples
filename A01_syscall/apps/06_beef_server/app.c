@@ -18,6 +18,7 @@ struct ether_hdr {
 
 int main(void)
 {
+	puts("SERVER STARTED\r\n");
 	while (1) {
 		unsigned char buf[PACKET_BUFFER_SIZE];
 		unsigned char buf_s[PACKET_BUFFER_SIZE] = { 0 };
