@@ -68,6 +68,9 @@ static void rx_init(void)
 	/* rxdescの先頭アドレスを16バイトの倍数となるようにする */
 	unsigned long long rxdesc_addr = (unsigned long long)rxdesc_data;
 	rxdesc_addr = (rxdesc_addr + ALIGN_MARGIN) & 0xfffffffffffffff0;
+	if (rxdesc_addr % 16 != 0) {
+		putc("INVALID ALIGNMENT\r\n");
+	}
 
 	/* rxdescの初期化 */
 	rxdesc_base = (struct rxdesc *)rxdesc_addr;
@@ -183,6 +186,24 @@ unsigned short receive_frame(void *buf)
 	unsigned short len = 0;
 
 	struct rxdesc *cur_rxdesc = rxdesc_base + current_rx_idx;
+	// if (!(cur_rxdesc->status & NIC_RDESC_STAT_DD)) {
+	// 	puts("CURRENT RX IDX: ");
+	// 	puth(current_rx_idx, 8);
+	// 	puts("\r\n");
+
+	// 	puts("NIC_REG_RDH: ");
+	// 	puth(get_nic_reg(NIC_REG_RDH), 8);
+	// 	puts("\r\n");
+
+	// 	puts("NIC_REG_RDT: ");
+	// 	puth(get_nic_reg(NIC_REG_RDT), 8);
+	// 	puts("\r\n");
+
+	// 	long long x = 0;
+	// 	while(x < 1000000000) {
+	// 		x += 1;
+	// 	}
+	// }
 	if (cur_rxdesc->status & NIC_RDESC_STAT_DD) {
 		len = cur_rxdesc->length;
 		memcpy(buf, (void *)cur_rxdesc->buffer_address,
