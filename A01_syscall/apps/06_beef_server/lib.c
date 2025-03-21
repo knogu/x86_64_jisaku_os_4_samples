@@ -38,6 +38,21 @@ void puts(char *s)
 		putc(*s++);
 }
 
+void putd(unsigned long long val, unsigned char num_digits)
+{
+	char str[MAX_STR_BUF];
+
+	int i;
+	for (i = num_digits - 1; i >= 0; i--) {
+		int digit = val % 10;
+		str[i] = '0' + digit;
+		val /= 10;
+	}
+	str[num_digits] = '\0';
+
+	puts(str);
+}
+
 void puth(unsigned long long val, unsigned char num_digits)
 {
 	char str[MAX_STR_BUF];

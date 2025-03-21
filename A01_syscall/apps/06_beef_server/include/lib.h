@@ -9,6 +9,7 @@ struct __attribute__((packed)) file {
 
 void putc(char c);
 void puts(char *s);
+void putd(unsigned long long val, unsigned char num_digits);
 void puth(unsigned long long val, unsigned char num_digits);
 struct file *open(char *file_name);
 void exec(struct file *file);

@@ -57,10 +57,17 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 
 	/* スケジューラの開始 */
 	sched_start();
+	
 
 	/* initアプリ起動 */
-	exec(open(INIT_APP));
-
+	struct file* f = open(INIT_APP);
+	if (f != NULL) {
+		puts("STARTING APP FROM KERNEL\r\n");
+		exec(f);
+	} else {
+		puts("app was not found\r\n");
+	}
+	
 	/* haltして待つ */
 	while (1)
 		cpu_halt();

@@ -16,33 +16,16 @@ struct ether_hdr {
     short type;
 };
 
-// void fill(unsigned char buf_s[], unsigned char idx, unsigned char* src, unsigned char len) {
-// 	for (int i = idx; i < idx + len; i++) {
-// 		buf_s[i] = *(src + i);
-// 	}
-// }
+void fill(unsigned char buf_s[], unsigned char idx, unsigned char* src, unsigned char len);
 
-// void fill_bytes(unsigned char buf_s[], unsigned char idx, long long val, unsigned char bytes_cnt) {
-// 	for (int i = idx; i < idx + bytes_cnt; i++) {
-// 		buf_s[i] = val >> (8 * (bytes_cnt - (i - idx))); // ビッグエンディアンなので、valの上のバイトからbufに詰めていく
-// 	}
-// }
+void fill_bytes(unsigned char buf_s[], unsigned char idx, long long val, unsigned char bytes_cnt);
 
-// unsigned char src_mac_addr[] = {0x68, 0xf7, 0x28, 0x69, 0x24, 0xcc};
-// unsigned char src_ip_addr[] = {192, 168, 1, 0};
+unsigned char src_mac_addr[] = {0x68, 0xf7, 0x28, 0x69, 0x24, 0xcc};
+unsigned char src_ip_addr[] = {192, 168, 1, 0};
 
-// void set_src_mac(unsigned char buf_s[]) {
-// 	for (int i = 0; i < 6; i++) {
-// 		buf_s[i + 6] = src_mac_addr[i];
-// 	}
-// }
+void set_src_mac(unsigned char buf_s[]);
 
-// void set_dst_mac(unsigned char buf_s[], unsigned char* dst_mac) {
-// 	for (int i = 0; i < 6; i++) {
-// 		buf_s[i] = *(dst_mac + i);
-// 	}
-// }
-
+void set_dst_mac(unsigned char buf_s[], unsigned char* dst_mac);
 int main(void)
 {
 	puts("SERVER STARTED\r\n");
@@ -73,12 +56,31 @@ int main(void)
 
 		if (buf[0] == 0xff && buf[1] == 0xff && buf[2] == 0xff && buf[3] == 0xff && buf[4] == 0xff && buf[5] == 0xff) {
 			if (buf[12] == 0x08 && buf[13] == 0x06) {
-				puts("LOOKS LIKE ARP\r\n");
+				puts("LOOKS LIKE ARP ");
+				if (buf[20] == 0 && buf[21] == 1) {
+					puts("REQUEST\r\n");
+				} else if (buf[20] == 0 && buf[21] == 2) {
+					puts("REPLY\r\n");
+				}
+			
+				puts("SRC MAC: ");
+				for (int i = 22; i < 28; i++) {
+					puth(buf[i], 2);
+					putc(' ');
+				}
+				puts("\r\n");
+				puts("SRC IP: ");
+				for (int i = 28; i < 32; i++) {
+					putd(buf[i], 3);
+					putc(' ');
+				}
+				puts("\r\n");
+				long long i = 0;
+				while(i < 1000000000) {
+					i += 1;
+				}
 			}
-			long long x = 0;
-			while(x < 1000000000) {
-				x += 1;
-			}
+			
 
 			// set_dst_mac(buf_s, (buf + 6));
 			// set_src_mac(buf_s);
@@ -103,15 +105,7 @@ void dump_frame(unsigned char buf[], unsigned short len)
 {
 	unsigned short i;
 	for (i = 0; i < len; i++) {
-		if (0 < i) {
-			if (buf[i-1] == 0x06 && buf[i] == 0x08) {
-				puts("ARP TYPE FOUND\r\n");
-				long long x = 0;
-				while(x < 1000000000) {
-					i += 1;
-				}
-			}
-		}
+		
 		puth(buf[i], 2);
 		putc(' ');
 
@@ -205,4 +199,29 @@ int is_arp_naive(unsigned char buf[], unsigned short len)
 		}
 	}
 	return 0;
+}
+
+void fill(unsigned char buf_s[], unsigned char idx, unsigned char* src, unsigned char len) {
+	for (int i = idx; i < idx + len; i++) {
+		buf_s[i] = *(src + i);
+	}
+}
+
+void fill_bytes(unsigned char buf_s[], unsigned char idx, long long val, unsigned char bytes_cnt) {
+	for (int i = idx; i < idx + bytes_cnt; i++) {
+		buf_s[i] = val >> (8 * (bytes_cnt - (i - idx))); // ビッグエンディアンなので、valの上のバイトからbufに詰めていく
+	}
+}
+
+
+void set_src_mac(unsigned char buf_s[]) {
+	for (int i = 0; i < 6; i++) {
+		buf_s[i + 6] = src_mac_addr[i];
+	}
+}
+
+void set_dst_mac(unsigned char buf_s[], unsigned char* dst_mac) {
+	for (int i = 0; i < 6; i++) {
+		buf_s[i] = *(dst_mac + i);
+	}
 }

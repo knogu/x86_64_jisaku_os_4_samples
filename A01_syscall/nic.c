@@ -69,7 +69,7 @@ static void rx_init(void)
 	unsigned long long rxdesc_addr = (unsigned long long)rxdesc_data;
 	rxdesc_addr = (rxdesc_addr + ALIGN_MARGIN) & 0xfffffffffffffff0;
 	if (rxdesc_addr % 16 != 0) {
-		putc("INVALID ALIGNMENT\r\n");
+		puts("INVALID ALIGNMENT\r\n");
 	}
 
 	/* rxdescの初期化 */
