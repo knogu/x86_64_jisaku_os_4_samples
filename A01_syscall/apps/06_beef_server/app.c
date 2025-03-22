@@ -20,10 +20,10 @@ void fill(unsigned char buf_s[], unsigned char idx, unsigned char* src, unsigned
 
 void fill_bytes(unsigned char buf_s[], unsigned char idx, long long val, unsigned char bytes_cnt);
 
-unsigned char src_mac_addr[] = {0x68, 0xf7, 0x28, 0x69, 0x24, 0xcc};
-unsigned char src_ip_addr[] = {192, 168, 1, 0};
+unsigned char thinkpad_mac_addr[] = {0x68, 0xf7, 0x28, 0x69, 0x24, 0xcc};
+unsigned char thinkpad_ip_addr[] = {192, 168, 0, 2};
 
-void set_src_mac(unsigned char buf_s[]);
+void set_ether_src_mac(unsigned char buf_s[]);
 
 void set_dst_mac(unsigned char buf_s[], unsigned char* dst_mac);
 int main(void)
@@ -59,42 +59,47 @@ int main(void)
 				puts("LOOKS LIKE ARP ");
 				if (buf[20] == 0 && buf[21] == 1) {
 					puts("REQUEST\r\n");
+
+					puts("SRC MAC: ");
+					for (int i = 22; i < 28; i++) {
+						puth(buf[i], 2);
+						putc(' ');
+					}
+					puts("\r\n");
+					puts("SRC IP: ");
+					for (int i = 28; i < 32; i++) {
+						putd(buf[i], 3);
+						putc(' ');
+					}
+					puts("\r\n");
+
+					set_dst_mac(buf_s, (buf + 6));
+					set_ether_src_mac(buf_s);
+					buf_s[12] = 0x08;
+					buf_s[13] = 0x06;
+					fill_bytes(buf_s, 14, 0x0001, 2);
+					fill_bytes(buf_s, 16, 0x0800, 2);
+					fill_bytes(buf_s, 18, 6, 1);
+					fill_bytes(buf_s, 19, 4, 1);
+					fill_bytes(buf_s, 20, 2, 2);
+					fill(buf_s, 22, thinkpad_mac_addr, 6);
+					fill(buf_s, 28, thinkpad_ip_addr, 4);
+					fill(buf_s, 32, (buf + 22), 6);
+					fill(buf_s, 38, (buf + 28), 4);
+					dump_frame(buf_s, 42);
+					if (buf[28] != 0) {
+						unsigned char stat = send_frame(buf_s, 42);
+						if (stat == (1U << 0)) {
+							puts("__SUCCEEDED TO SEND ");
+						} else {
+							puts("__FAILED TO SEND ");
+						}
+						puts("\r\n");
+					}
 				} else if (buf[20] == 0 && buf[21] == 2) {
 					puts("REPLY\r\n");
 				}
-			
-				puts("SRC MAC: ");
-				for (int i = 22; i < 28; i++) {
-					puth(buf[i], 2);
-					putc(' ');
-				}
-				puts("\r\n");
-				puts("SRC IP: ");
-				for (int i = 28; i < 32; i++) {
-					putd(buf[i], 3);
-					putc(' ');
-				}
-				puts("\r\n");
-				long long i = 0;
-				while(i < 1000000000) {
-					i += 1;
-				}
 			}
-			
-
-			// set_dst_mac(buf_s, (buf + 6));
-			// set_src_mac(buf_s);
-			// buf_s[12] = 0x08;
-			// buf_s[13] = 0x06;
-			// fill_bytes(buf_s, 14, 0x0001, 2);
-			// fill_bytes(buf_s, 16, 0x0800, 2);
-			// fill_bytes(buf_s, 18, 6, 1);
-			// fill_bytes(buf_s, 19, 4, 1);
-			// fill_bytes(buf_s, 20, 2, 2);
-			// fill(buf_s, 22, src_mac_addr, 6);
-			// fill(buf_s, 28, src_ip_addr, 4);
-			// fill(buf_s, 32, (buf + 6), 6);
-			// todo: parse the arp request and fill target ip, and check the 
 		}
 	}
 
@@ -202,21 +207,21 @@ int is_arp_naive(unsigned char buf[], unsigned short len)
 }
 
 void fill(unsigned char buf_s[], unsigned char idx, unsigned char* src, unsigned char len) {
-	for (int i = idx; i < idx + len; i++) {
-		buf_s[i] = *(src + i);
+	for (int i = 0; i < len; i++) {
+		buf_s[i + idx] = *(src + i);
 	}
 }
 
 void fill_bytes(unsigned char buf_s[], unsigned char idx, long long val, unsigned char bytes_cnt) {
 	for (int i = idx; i < idx + bytes_cnt; i++) {
-		buf_s[i] = val >> (8 * (bytes_cnt - (i - idx))); // ビッグエンディアンなので、valの上のバイトからbufに詰めていく
+		buf_s[i] = val >> (8 * (bytes_cnt - (i - idx) - 1)); // ビッグエンディアンなので、valの上のバイトからbufに詰めていく
 	}
 }
 
 
-void set_src_mac(unsigned char buf_s[]) {
+void set_ether_src_mac(unsigned char buf_s[]) {
 	for (int i = 0; i < 6; i++) {
-		buf_s[i + 6] = src_mac_addr[i];
+		buf_s[i + 6] = thinkpad_mac_addr[i];
 	}
 }
 
