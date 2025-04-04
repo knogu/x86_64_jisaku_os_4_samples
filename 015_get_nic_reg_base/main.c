@@ -19,6 +19,15 @@ struct __attribute__((packed)) platform_info {
 	void *rsdp;
 };
 
+union CapabilityHeader {
+    unsigned int data;
+    struct {
+        unsigned char cap_id;
+        unsigned char next_ptr;
+        unsigned short reserved;
+    } bits;
+};
+
 #define INIT_APP	"test"
 
 unsigned int get_nic_reg_base(void);
@@ -46,9 +55,9 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	nic_init();
 
 
-	unsigned int nic_dev_idx;
+	unsigned int nic_dev_num;
 	unsigned short nic_vendor_id;
-	unsigned short nic_device_id;
+	unsigned short nic_device_identifier;
 	unsigned int nic_reg_base;
 	for (int device=0; device < 32; ++device) {
 		unsigned int conf_data = get_pci_conf_reg(
@@ -65,19 +74,19 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 		unsigned short base = (class_code >> 24) & 0xffu;
     	unsigned short sub = (class_code >> 16) & 0xffu;
 		if (base == 0x02 && sub == 0) {
-			nic_dev_idx = device;
+			nic_dev_num = device;
 			nic_vendor_id = cur_vendor_id;
-			nic_device_id = cur_device_id;
+			nic_device_identifier = cur_device_id;
 			nic_reg_base = get_pci_conf_reg(0, device, 0, 0x10) & PCI_BAR_MASK_MEM_ADDR;
 			break;
 		}
 	}
 
 	puts("NIC DEVICE INDEX ");
-	puth(nic_dev_idx, 8);
+	puth(nic_dev_num, 8);
 
 	puts("  DEVICE ID ");
-	puth(nic_device_id, 8);
+	puth(nic_device_identifier, 8);
 
 	puts("  VENDOR ID ");
 	puth(nic_vendor_id, 4);
@@ -87,9 +96,30 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	puth(nic_reg_base, 8);
 	puts("\r\n");
 
-	puts("  NIC REG BASE ANS");
-	puth(get_nic_reg_base(), 8);
-	puts("\r\n");
+	unsigned char msi_cap_addr = 0, msix_cap_addr = 0;
+	unsigned char cap_addr = get_pci_conf_reg(0, nic_dev_num, 0, 0x34) & 0xffu;
+	int i = 0;
+	while (cap_addr != 0 && i < 64) {
+		puts("  CAP ADDR ");
+		puth(cap_addr, 2);
+		puts(" ");
+		union CapabilityHeader header;
+		header.data = get_pci_conf_reg(0, nic_dev_num, 0, cap_addr);
+		if (header.bits.cap_id == 0x05) {
+			msi_cap_addr = cap_addr;
+		} else if (header.bits.cap_id == 0x11) {
+			msix_cap_addr = cap_addr;
+		}
+		cap_addr = header.bits.next_ptr;
+		i += 1;
+	}
+
+	puts("  MSI CAP ADDR ");
+	puth(msi_cap_addr, 4);
+
+	puts("  MSIX CAP ADDR ");
+	puth(msix_cap_addr, 4);
+
 
 	/* haltして待つ */
 	while (1)
