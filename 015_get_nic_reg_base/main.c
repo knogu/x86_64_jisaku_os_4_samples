@@ -21,6 +21,8 @@ struct __attribute__((packed)) platform_info {
 
 #define INIT_APP	"test"
 
+unsigned int get_nic_reg_base(void);
+
 void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 		  void *_fs_start)
 {
@@ -44,11 +46,49 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	nic_init();
 
 
+	unsigned int nic_dev_idx;
+	unsigned short nic_vendor_id;
+	unsigned short nic_device_id;
+	unsigned int nic_reg_base;
+	for (int device=0; device < 32; ++device) {
+		unsigned int conf_data = get_pci_conf_reg(
+			0, device, 0, PCI_CONF_DID_VID);
+	
+		/* 読み出したデータからベンダーID・デバイスIDを取得 */
+		unsigned short cur_vendor_id = conf_data & 0x0000ffff;	
+		if (cur_vendor_id == 0xffffu) {
+			continue;
+		}
+		unsigned short cur_device_id = conf_data >> 16;
 
-	/* NICのレジスタのベースアドレスを表示 */
-	unsigned int nic_reg_base = get_nic_reg_base();
-	puts("NIC REG BASE ");
+		unsigned int class_code = get_pci_conf_reg(0, device, 0, 0x08);
+		unsigned short base = (class_code >> 24) & 0xffu;
+    	unsigned short sub = (class_code >> 16) & 0xffu;
+		if (base == 0x02 && sub == 0) {
+			nic_dev_idx = device;
+			nic_vendor_id = cur_vendor_id;
+			nic_device_id = cur_device_id;
+			nic_reg_base = get_pci_conf_reg(0, device, 0, 0x10) & PCI_BAR_MASK_MEM_ADDR;
+			break;
+		}
+	}
+
+	puts("NIC DEVICE INDEX ");
+	puth(nic_dev_idx, 8);
+
+	puts("  DEVICE ID ");
+	puth(nic_device_id, 8);
+
+	puts("  VENDOR ID ");
+	puth(nic_vendor_id, 4);
+	puts("\r\n");
+
+	puts("  NIC REG BASE ");
 	puth(nic_reg_base, 8);
+	puts("\r\n");
+
+	puts("  NIC REG BASE ANS");
+	puth(get_nic_reg_base(), 8);
 	puts("\r\n");
 
 	/* haltして待つ */
