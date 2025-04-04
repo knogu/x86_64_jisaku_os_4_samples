@@ -44,6 +44,11 @@ union pci_config_address {
 #define NIC_DEV_NUM	0x19
 #define NIC_FUNC_NUM	0x0
 
+unsigned int get_pci_conf_reg(
+	unsigned char bus, unsigned char dev, unsigned char func,
+	unsigned char reg);
+
+void dump_vid_did(unsigned char bus, unsigned char dev, unsigned char func);
 
 void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 		  void *_fs_start)
@@ -93,6 +98,38 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	puth((header_type & 0x80u) == 0, 4);
 	puts("\r\n");
 
+	for (int device=0; device < 32; ++device) {
+		unsigned int conf_data = get_pci_conf_reg(
+			0, device, 0, PCI_CONF_DID_VID);
+	
+		/* 読み出したデータからベンダーID・デバイスIDを取得 */
+		unsigned short vendor_id = conf_data & 0x0000ffff;	
+		if (vendor_id == 0xffffu) {
+			continue;
+		}
+		unsigned short device_id = conf_data >> 16;
+		puts("DEVICE INDEX ");
+		puth(device, 8);
+
+		puts("  DEVICE ID ");
+		puth(device_id, 8);
+
+		puts("  VENDOR ID ");
+		puth(vendor_id, 4);
+		puts("\r\n");
+
+		unsigned int class_code = get_pci_conf_reg(
+			0, device, 0, 0x08);
+		unsigned short base = (class_code >> 24) & 0xffu;
+    	unsigned short sub = (class_code >> 16) & 0xffu;
+		puts("BASE CLASS ");
+		puth(base, 4);
+		puts("  SUB CLASS ");
+		puth(sub, 4);
+		puts("\r\n");
+		puts("\r\n");
+	}
+
 	/* haltして待つ */
 	while (1)
 		cpu_halt();
@@ -120,4 +157,41 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	/* haltして待つ */
 	while (1)
 		cpu_halt();
+}
+
+unsigned int get_pci_conf_reg(
+	unsigned char bus, unsigned char dev, unsigned char func,
+	unsigned char reg)
+{
+	/* CONFIG_ADDRESSを設定 */
+	union pci_config_address conf_addr;
+	conf_addr.raw = 0;
+	conf_addr.bus_num = bus;
+	conf_addr.dev_num = dev;
+	conf_addr.func_num = func;
+	conf_addr.reg_addr = reg;
+	conf_addr.enable_bit = 1;
+	io_write32(CONFIG_ADDRESS, conf_addr.raw);
+
+	/* CONFIG_DATAを読み出す */
+	return io_read32(CONFIG_DATA);
+}
+
+void dump_vid_did(unsigned char bus, unsigned char dev, unsigned char func)
+{
+	/* PCIコンフィグレーション空間のレジスタを読み出す */
+	unsigned int conf_data = get_pci_conf_reg(
+		bus, dev, func, PCI_CONF_DID_VID);
+
+	/* 読み出したデータからベンダーID・デバイスIDを取得 */
+	unsigned short vendor_id = conf_data & 0x0000ffff;
+	unsigned short device_id = conf_data >> 16;
+
+	/* 表示 */
+	puts("VENDOR ID ");
+	puth(vendor_id, 4);
+	puts("\r\n");
+	puts("DEVICE ID ");
+	puth(device_id, 4);
+	puts("\r\n");
 }
