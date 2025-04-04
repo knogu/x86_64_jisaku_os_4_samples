@@ -5,10 +5,10 @@ LDFLAGS = -Map app.map -s -x -T ../app.ld -pie
 OBJS = app.o
 
 $(TARGET): $(OBJS)
-	ld $(LDFLAGS) -o $@ $+
+	x86_64-elf-ld $(LDFLAGS) -o $@ $+
 
 %.o: %.c
-	gcc $(CFLAGS) -c -o $@ $<
+	x86_64-elf-gcc $(CFLAGS) -c -o $@ $<
 
 deploy: $(TARGET)
 	../../tools/create_fs.sh $(TARGET)

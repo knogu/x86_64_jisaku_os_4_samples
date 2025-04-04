@@ -47,6 +47,7 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	/* NICのベンダーIDとデバイスIDをダンプ */
 	dump_vid_did(NIC_BUS_NUM, NIC_DEV_NUM, NIC_FUNC_NUM);
 
+
 	/* haltして待つ */
 	while (1)
 		cpu_halt();

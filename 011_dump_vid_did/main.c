@@ -73,26 +73,24 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	/* CONFIG_ADDRESSを設定 */
 	union pci_config_address conf_addr;
 	conf_addr.raw = 0;
-	conf_addr.bus_num = NIC_BUS_NUM;
-	conf_addr.dev_num = NIC_DEV_NUM;
-	conf_addr.func_num = NIC_FUNC_NUM;
-	conf_addr.reg_addr = PCI_CONF_DID_VID;
+	conf_addr.bus_num = 0;
+	conf_addr.dev_num = 0;
+	conf_addr.func_num = 0;
+	conf_addr.reg_addr = 0x0c;
 	conf_addr.enable_bit = 1;
 	io_write32(CONFIG_ADDRESS, conf_addr.raw);
 
 	/* CONFIG_DATAを読み出す */
 	unsigned int conf_data = io_read32(CONFIG_DATA);
 
-	/* 読み出したデータからベンダーID・デバイスIDを取得 */
-	unsigned short vendor_id = conf_data & 0x0000ffff;
-	unsigned short device_id = conf_data >> 16;
+	unsigned short header_type = (conf_data >> 16) & 0xffu;
 
 	/* 表示 */
-	puts("VENDOR ID ");
-	puth(vendor_id, 4);
+	puts("HEADER TYPE");
+	puth(header_type, 4);
 	puts("\r\n");
-	puts("DEVICE ID ");
-	puth(device_id, 4);
+	puts("IS SINGLE");
+	puth((header_type & 0x80u) == 0, 4);
 	puts("\r\n");
 
 	/* haltして待つ */
