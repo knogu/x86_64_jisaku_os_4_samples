@@ -1,6 +1,21 @@
 {
     "files.associations": {
         "vector": "c",
-        "iosfwd": "c"
+        "iosfwd": "c",
+        "__hash_table": "c",
+        "__tree": "c",
+        "__tuple": "c",
+        "array": "c",
+        "type_traits": "c",
+        "limits": "c",
+        "ratio": "c",
+        "tuple": "c",
+        "variant": "c",
+        "chrono": "c",
+        "compare": "c",
+        "cstddef": "c",
+        "random": "c",
+        "functional": "c",
+        "utility": "c"
     }
 }

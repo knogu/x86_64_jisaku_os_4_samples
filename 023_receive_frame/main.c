@@ -76,16 +76,16 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	clear_screen();
 
 	/* ACPIの初期化 */
-	acpi_init(pi->rsdp);
+	// acpi_init(pi->rsdp);
 
 	/* CPU周りの初期化 */
-	gdt_init();
-	intr_init();
+	// gdt_init();
+	// intr_init();
 
 	/* 周辺ICの初期化 */
-	pic_init();
-	hpet_init();
-	kbc_init();
+	// pic_init();
+	// hpet_init();
+	// kbc_init();
 	unsigned int nic_dev_num;
 	unsigned short nic_vendor_id;
 	unsigned short nic_device_identifier;
@@ -234,6 +234,8 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 void do_nic_interrupt(void)
 {
 	puts("\r\nNIC INTR \r\n");
-	/* PICへ割り込み処理終了を通知(EOI) */
-	set_pic_eoi(NIC_INTR_NO);
+	get_nic_reg(0x00C0);
+	get_nic_reg(0x00C0);
+	volatile uint32_t* end_of_interrupt = (volatile uint32_t*)0xfee000b0;
+	*end_of_interrupt = 0;
 }

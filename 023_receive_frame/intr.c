@@ -23,7 +23,7 @@ void set_intr_desc(unsigned char intr_no, void *handler)
 void set_intr_desc_type(unsigned char intr_no, void *handler, unsigned short ss)
 {
 	idt[intr_no].offset_00_15 = (unsigned long long)handler;
-	idt[intr_no].segment_selector = SS_KERNEL_CODE;
+	idt[intr_no].segment_selector = ss;
 	idt[intr_no].type = DESC_TYPE_INTR;
 	idt[intr_no].ist = 0;
 	idt[intr_no].dpl = 0;
