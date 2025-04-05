@@ -137,6 +137,16 @@ void nic_init(void)
 	/* NICのレジスタのベースアドレスを取得しておく */
 	nic_reg_base = get_nic_reg_base();
 
+	puts("GOT BASE \r\n");
+	set_nic_reg(0, get_nic_reg(0) | 1 << 26);
+	puts("RESET TRIGGERED \r\n");
+	while ((get_nic_reg(0) & (1<<26)) != 0) {
+		for (long long i = 0; i < 100000; i++) {
+		}
+		puts("RESETTING \r\n");
+	}
+	set_nic_reg(0, get_nic_reg(0) | 1 << 5 | 1 << 6);
+
 	/* NICの割り込みを全て無効にする */
 	disable_nic_interrupt();
 
