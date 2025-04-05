@@ -145,7 +145,12 @@ void nic_init(void)
 		}
 		puts("RESETTING \r\n");
 	}
+	// Link up
 	set_nic_reg(0, get_nic_reg(0) | 1 << 5 | 1 << 6);
+	// Fill Multicast Table Array with zeros.
+    for (int i = 0; i < 0x80; i++) {
+		set_nic_reg(0x5200 + i * 4, 0);
+    }
 
 	/* NICの割り込みを全て無効にする */
 	disable_nic_interrupt();
