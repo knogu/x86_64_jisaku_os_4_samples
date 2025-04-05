@@ -61,3 +61,4 @@ void set_nic_reg(unsigned short reg, unsigned int val);
 void dump_nic_ims(void);
 unsigned short receive_frame(void *buf);
 unsigned short dump_frame(void);
+static void enable_nic_interrupt(void);

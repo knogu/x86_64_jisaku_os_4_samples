@@ -24,6 +24,11 @@ static unsigned char rxdesc_data[
 static struct rxdesc *rxdesc_base;
 static unsigned short current_rx_idx;
 
+static void enable_nic_interrupt(void)
+{
+	set_nic_reg(NIC_REG_IMS, 0x00000080);
+}
+
 static void disable_nic_interrupt(void)
 {
 	/* 一旦、コマンドとステータスを読み出す */
@@ -82,8 +87,8 @@ void nic_init(void)
 	/* NICのレジスタのベースアドレスを取得しておく */
 	nic_reg_base = get_nic_reg_base();
 
-	/* NICの割り込みを全て無効にする */
-	disable_nic_interrupt();
+	/* not sure whether necessary */
+	enable_nic_interrupt();
 
 	/* 受信の初期化処理 */
 	rx_init();
