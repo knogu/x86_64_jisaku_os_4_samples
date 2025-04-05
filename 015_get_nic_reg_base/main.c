@@ -14,6 +14,11 @@
 #include <pci.h>
 #include <nic.h>
 
+void nic_handler(void);
+
+typedef unsigned int uint32_t;
+typedef unsigned char uint8_t;
+
 struct __attribute__((packed)) platform_info {
 	struct framebuffer fb;
 	void *rsdp;
@@ -27,6 +32,32 @@ union CapabilityHeader {
         unsigned short reserved;
     } bits;
 };
+
+#define NIC_INTR_NO	32
+
+void do_nic_interrupt(void);
+
+struct MSICapability {
+    union {
+      uint32_t data;
+      struct {
+        uint32_t cap_id : 8;
+        uint32_t next_ptr : 8;
+        uint32_t msi_enable : 1;
+        uint32_t multi_msg_capable : 3;
+        uint32_t multi_msg_enable : 3;
+        uint32_t addr_64_capable : 1;
+        uint32_t per_vector_mask_capable : 1;
+        uint32_t : 7;
+      } __attribute__((packed)) bits;
+    } __attribute__((packed)) header ;
+
+    uint32_t msg_addr;
+    uint32_t msg_upper_addr;
+    uint32_t msg_data;
+    uint32_t mask_bits;
+    uint32_t pending_bits;
+  } __attribute__((packed));
 
 #define INIT_APP	"test"
 
@@ -52,7 +83,7 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	pic_init();
 	hpet_init();
 	kbc_init();
-	nic_init();
+	// nic_init();
 
 
 	unsigned int nic_dev_num;
@@ -119,7 +150,50 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 
 	puts("  MSIX CAP ADDR ");
 	puth(msix_cap_addr, 4);
+	
+	struct MSICapability msi_cap;
+	msi_cap.header.data = get_pci_conf_reg(0, nic_dev_num, 0, msi_cap_addr);
+	msi_cap.msg_addr = get_pci_conf_reg(0, nic_dev_num, 0, msi_cap_addr + 4);
 
+	unsigned char msg_data_addr = msi_cap_addr + 8;
+	if (msi_cap.header.bits.addr_64_capable) {
+		msi_cap.msg_upper_addr = get_pci_conf_reg(0, nic_dev_num, 0, msi_cap_addr + 8);
+		msg_data_addr = msi_cap_addr + 12;
+	}
+
+	msi_cap.msg_data = get_pci_conf_reg(0, nic_dev_num, 0, msg_data_addr);
+	if (msi_cap.header.bits.per_vector_mask_capable) {
+		msi_cap.mask_bits = get_pci_conf_reg(0, nic_dev_num, 0, msg_data_addr + 4);
+		msi_cap.pending_bits = get_pci_conf_reg(0, nic_dev_num, 0, msg_data_addr + 8);
+	}
+	msi_cap.header.bits.multi_msg_enable = 0;
+	msi_cap.header.bits.msi_enable = 1;
+
+	unsigned char bsp_local_apic_id = (0xfee00020) >> 24;
+	uint32_t msg_addr = 0xfee00000u | (bsp_local_apic_id << 12);
+    uint32_t msg_data = NIC_INTR_NO;
+	msi_cap.msg_addr = msg_addr;
+    msi_cap.msg_data = msg_data;
+
+	set_pci_conf_reg(0, nic_dev_num, 0, msi_cap_addr, msi_cap.header.data);
+	set_pci_conf_reg(0, nic_dev_num, 0, msi_cap_addr + 4, msi_cap.msg_addr);
+	msg_data_addr = msi_cap_addr + 8;
+    if (msi_cap.header.bits.addr_64_capable) {
+		set_pci_conf_reg(0, nic_dev_num, 0, msi_cap_addr + 8, msi_cap.msg_upper_addr);
+      	msg_data_addr = cap_addr + 12;
+    }
+	set_pci_conf_reg(0, nic_dev_num, 0, msg_data_addr, msi_cap.msg_data);
+	if (msi_cap.header.bits.per_vector_mask_capable) {
+		set_pci_conf_reg(0, nic_dev_num, 0, msg_data_addr + 4, msi_cap.mask_bits);
+		set_pci_conf_reg(0, nic_dev_num, 0, msg_data_addr + 8, msi_cap.pending_bits);
+	}
+
+	set_intr_desc(NIC_INTR_NO, nic_handler);
+
+	/* CPUの割り込み有効化 */
+	enable_cpu_intr();
+
+	puts("  CONFIG DONE ");	
 
 	/* haltして待つ */
 	while (1)
@@ -136,9 +210,6 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	/* スケジューラの初期化 */
 	sched_init();
 
-	/* CPUの割り込み有効化 */
-	enable_cpu_intr();
-
 	/* スケジューラの開始 */
 	sched_start();
 
@@ -148,4 +219,11 @@ void start_kernel(void *_t __attribute__((unused)), struct platform_info *pi,
 	/* haltして待つ */
 	while (1)
 		cpu_halt();
+}
+
+void do_nic_interrupt(void)
+{
+	puts("\r\nNIC INTR \r\n");
+	/* PICへ割り込み処理終了を通知(EOI) */
+	set_pic_eoi(NIC_INTR_NO);
 }
